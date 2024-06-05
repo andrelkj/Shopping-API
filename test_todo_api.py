@@ -1,4 +1,5 @@
 import requests
+import uuid
 
 ENDPOINT = "https://todo.pixegami.io/"
 
@@ -15,7 +16,6 @@ def test_can_create_task():
     assert create_task_response.status_code == 200
 
     data = create_task_response.json()
-    print(data)
 
     task_id = data["task"]["task_id"]
     get_task_response = get_task(task_id)
@@ -50,6 +50,24 @@ def test_can_update_task():
     assert get_task_data["is_done"] == new_payload["is_done"]
 
 
+def test_can_list_tasks():
+    # Create n tasks
+    n = 3
+    payload = new_task_payload()
+    for _ in range(n):
+        create_task_response = create_task(payload)
+        assert create_task_response.status_code == 200
+
+    # List tasks, and check that there are n items
+    user_id = payload["user_id"]
+    list_task_response = list_tasks(user_id)
+    assert list_task_response.status_code == 200
+    data = list_task_response.json()
+
+    tasks = data["tasks"]
+    assert len(tasks) == n
+
+
 def create_task(payload):
     return requests.put(ENDPOINT + "/create-task", json=payload)
 
@@ -62,9 +80,16 @@ def get_task(task_id):
     return requests.get(ENDPOINT + f"/get-task/{task_id}")
 
 
+def list_tasks(user_id):
+    return requests.get(ENDPOINT + f"/list-tasks/{user_id}")
+
+
 def new_task_payload():
+    user_id = f"test_user_{uuid.uuid4().hex}"
+    content = f"test_content_{uuid.uuid4().hex}"
+
     return {
-        "content": "Test content",
-        "user_id": "test_user",
+        "content": content,
+        "user_id": user_id,
         "is_done": False,
     }
